@@ -1,0 +1,2738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mind3D | Web3D 高渲染 GIS 引擎</title>
+  <meta name="description" content="Mind3D 专注 Web3D 高渲染 GIS 引擎与水利、低空、地灾应急等行业解决方案。" />
+  <meta name="theme-color" content="#07101b" />
+  <style>
+    :root {
+      --bg: #07101b;
+      --bg-soft: #0b1624;
+      --panel: rgba(255, 255, 255, .035);
+      --panel-strong: rgba(255, 255, 255, .055);
+      --line: rgba(255, 255, 255, .085);
+      --line-soft: rgba(255, 255, 255, .05);
+      --text: #edf4fb;
+      --muted: #93a9bd;
+      --soft: #74879b;
+      --brand: #67bcff;
+      --brand-2: #6cf3d8;
+      --shadow: 0 18px 60px rgba(0, 0, 0, .28);
+      --radius: 28px;
+      --container: 1180px;
+      --header-h: 76px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(103, 188, 255, .12), transparent 20%),
+        radial-gradient(circle at 82% 10%, rgba(108, 243, 216, .08), transparent 18%),
+        linear-gradient(180deg, #040a13 0%, #07101b 24%, #091523 100%);
+      overflow-x: hidden;
+      letter-spacing: .01em;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    .container {
+      width: min(calc(100% - 40px), var(--container));
+      margin: 0 auto;
+    }
+
+    #bgCanvas {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      width: 100%;
+      height: 100%;
+      opacity: .44;
+    }
+
+    .noise {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      opacity: .035;
+      background-image:
+        radial-gradient(circle at 20% 20%, #fff 0 1px, transparent 1px),
+        radial-gradient(circle at 70% 40%, #fff 0 1px, transparent 1px),
+        radial-gradient(circle at 45% 85%, #fff 0 1px, transparent 1px);
+      background-size: 180px 180px, 240px 240px, 260px 260px;
+    }
+
+    .top-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1600;
+      width: 0%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      box-shadow: 0 0 18px rgba(103, 188, 255, .45);
+    }
+
+    header {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 1300;
+      height: var(--header-h);
+      backdrop-filter: blur(16px);
+      background: linear-gradient(180deg, rgba(4, 10, 18, .92), rgba(4, 10, 18, .58));
+      border-bottom: 1px solid rgba(255, 255, 255, .05);
+    }
+
+    .nav {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 46px;
+      height: 46px;
+      padding: 6px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .03));
+      border: 1px solid rgba(255, 255, 255, .08);
+      overflow: hidden;
+      flex: 0 0 auto;
+    }
+
+    .brand-text strong {
+      display: block;
+      font-size: 18px;
+      letter-spacing: .04em;
+      font-weight: 700;
+    }
+
+    .brand-text span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+    }
+
+    .nav-links a {
+      padding: 10px 14px;
+      border-radius: 12px;
+      color: #dce8f6;
+      font-size: 14px;
+      transition: .22s ease;
+    }
+
+    .nav-links a:hover {
+      background: rgba(255, 255, 255, .04);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn,
+    .btn-ghost,
+    .btn-mini {
+      border: 0;
+      cursor: pointer;
+      transition: .25s ease;
+    }
+
+    .btn {
+      color: #04111d;
+      background: linear-gradient(135deg, var(--brand-2), var(--brand));
+      padding: 12px 18px;
+      border-radius: 14px;
+      font-weight: 700;
+      box-shadow: 0 10px 24px rgba(103, 188, 255, .18);
+    }
+
+    .btn-ghost {
+      color: var(--text);
+      background: rgba(255, 255, 255, .03);
+      border: 1px solid rgba(255, 255, 255, .08);
+      padding: 12px 16px;
+      border-radius: 14px;
+    }
+
+    .btn-mini {
+      color: var(--text);
+      background: transparent;
+      padding: 10px 8px;
+    }
+
+    .btn:hover,
+    .btn-ghost:hover {
+      transform: translateY(-2px);
+    }
+
+    .menu-toggle {
+      display: none;
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .04);
+      border: 1px solid rgba(255, 255, 255, .08);
+      color: var(--text);
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .mobile-menu {
+      position: fixed;
+      top: calc(var(--header-h) + 10px);
+      right: 20px;
+      width: min(320px, calc(100vw - 40px));
+      border-radius: 22px;
+      background: rgba(7, 17, 27, .96);
+      border: 1px solid rgba(255, 255, 255, .08);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-10px);
+      transition: .25s ease;
+      z-index: 1290;
+    }
+
+    .mobile-menu.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .mobile-menu a {
+      display: block;
+      padding: 12px 10px;
+      border-radius: 12px;
+      color: #dbe7f5;
+    }
+
+    .mobile-menu a:hover {
+      background: rgba(255, 255, 255, .04);
+    }
+
+    main {
+      padding-top: calc(var(--header-h) + 24px);
+    }
+
+    section {
+      padding: 128px 0;
+    }
+
+    .hero {
+      min-height: calc(100vh - var(--header-h));
+      display: flex;
+      align-items: center;
+      padding-top: 32px;
+    }
+
+    .hero-copy {
+      max-width: 860px;
+      margin: 0 auto 46px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .03);
+      border: 1px solid rgba(255, 255, 255, .08);
+      color: #ddecfa;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    .eyebrow i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand-2), var(--brand));
+      box-shadow: 0 0 10px rgba(108, 243, 216, .55);
+    }
+
+    .hero-logo {
+      width: 118px;
+      margin: 0 auto 26px;
+      filter: drop-shadow(0 12px 30px rgba(103, 188, 255, .16));
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(42px, 7vw, 82px);
+      line-height: .96;
+      letter-spacing: -.045em;
+      font-weight: 700;
+    }
+
+    .hero-sub {
+      margin: 24px auto 0;
+      max-width: 780px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.95;
+      font-weight: 400;
+    }
+
+    .hero-actions {
+      margin-top: 34px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .hero-stage {
+      position: relative;
+      max-width: 1180px;
+      margin: 0 auto;
+      border-radius: 34px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .015));
+      border: 1px solid rgba(255, 255, 255, .08);
+      box-shadow: var(--shadow);
+      min-height: 760px;
+    }
+
+    .hero-stage img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: .42;
+      mix-blend-mode: screen;
+      transform: scale(1.02);
+      filter: blur(5px);
+    }
+
+    .hero-stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(4, 11, 19, .04), rgba(4, 11, 19, .74)),
+        radial-gradient(circle at 50% 12%, rgba(103, 188, 255, .14), transparent 26%);
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 36px 36px 36px 36px;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hero-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-top: 150px;
+    }
+
+    .hero-center-logo {
+      width: 170px;
+      margin-bottom: 20px;
+      filter: drop-shadow(0 14px 30px rgba(103, 188, 255, .18));
+    }
+
+    .hero-center h2 {
+      margin: 0 0 10px;
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 1.02;
+      letter-spacing: -.04em;
+      font-weight: 700;
+    }
+
+    .hero-center p {
+      margin: 0;
+      max-width: 620px;
+      color: #c8d8e8;
+      font-size: 17px;
+      line-height: 1.9;
+    }
+
+    .product-pills {
+      display: inline-flex;
+      gap: 26px;
+      align-items: center;
+      padding: 14px 20px;
+      margin-top: 26px;
+      border-radius: 999px;
+      background: rgba(7, 17, 27, .46);
+      border: 1px solid rgba(255, 255, 255, .08);
+      backdrop-filter: blur(12px);
+    }
+
+    .product-pills span {
+      color: #e6f0fa;
+      font-size: 16px;
+      letter-spacing: .01em;
+    }
+
+    .product-pills span+span {
+      position: relative;
+    }
+
+    .product-pills span+span::before {
+      content: "";
+      position: absolute;
+      left: -14px;
+      top: 50%;
+      width: 1px;
+      height: 18px;
+      background: rgba(255, 255, 255, .14);
+      transform: translateY(-50%);
+    }
+
+    .hero-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+    }
+
+    .hero-card {
+      min-height: 320px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, .08);
+      background: rgba(7, 17, 27, .22);
+      backdrop-filter: blur(10px);
+      transition: transform .25s ease, border-color .25s ease;
+    }
+
+    .hero-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(103, 188, 255, .22);
+    }
+
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(4, 11, 19, .02), rgba(4, 11, 19, .78));
+    }
+
+    .hero-card-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      opacity: .78;
+      transition: transform .35s ease;
+    }
+
+    .hero-card:hover .hero-card-bg {
+      transform: scale(1.05);
+    }
+
+    .hero-card-content {
+      position: absolute;
+      inset: auto 22px 22px 22px;
+      z-index: 2;
+    }
+
+    .hero-card h3 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      line-height: 1.08;
+      font-weight: 700;
+    }
+
+    .hero-card ul {
+      margin: 0 0 18px;
+      padding-left: 18px;
+      color: #dce9f7;
+      line-height: 1.85;
+      font-size: 14px;
+    }
+
+    .hero-card .card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .06);
+      border: 1px solid rgba(255, 255, 255, .12);
+      color: #f0f7ff;
+      font-size: 13px;
+    }
+
+    .section-head {
+      max-width: 860px;
+      margin: 0 auto 48px;
+      text-align: center;
+    }
+
+    .section-head h2 {
+      margin: 0 0 14px;
+      font-size: clamp(32px, 5vw, 54px);
+      line-height: 1.02;
+      letter-spacing: -.04em;
+      font-weight: 700;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.95;
+      font-size: 16px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+    }
+
+    .stat {
+      padding: 36px 24px;
+      border-radius: 24px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: clamp(36px, 5vw, 54px);
+      line-height: 1;
+      margin-bottom: 12px;
+      letter-spacing: -.03em;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      line-height: 1.85;
+      font-size: 14px;
+    }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+
+    .product {
+      padding: 32px;
+      border-radius: 28px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      min-height: 360px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product small {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: 12px;
+    }
+
+    .product h3 {
+      margin: 18px 0 14px;
+      font-size: 29px;
+      line-height: 1.08;
+      letter-spacing: -.03em;
+      font-weight: 700;
+    }
+
+    .product p {
+      margin: 0 0 22px;
+      color: var(--muted);
+      line-height: 1.9;
+      font-size: 15px;
+    }
+
+    .product ul {
+      margin: auto 0 0;
+      padding-left: 18px;
+      color: #dce9f7;
+      line-height: 1.95;
+      font-size: 14px;
+    }
+
+    .solution-nav {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 38px;
+    }
+
+    .solution-btn {
+      padding: 12px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .03);
+      color: #dbe7f4;
+      cursor: pointer;
+      transition: .25s ease;
+    }
+
+    .solution-btn.active {
+      background: linear-gradient(180deg, rgba(103, 188, 255, .14), rgba(255, 255, 255, .04));
+      border-color: rgba(103, 188, 255, .28);
+    }
+
+    .solution-panel {
+      display: none;
+      grid-template-columns: .95fr 1.05fr;
+      gap: 34px;
+      align-items: center;
+    }
+
+    .solution-panel.active {
+      display: grid;
+    }
+
+    .solution-copy h3 {
+      margin: 0 0 16px;
+      font-size: 40px;
+      line-height: 1.05;
+      letter-spacing: -.04em;
+      font-weight: 700;
+    }
+
+    .solution-copy p {
+      margin: 0 0 24px;
+      color: var(--muted);
+      line-height: 1.95;
+      font-size: 16px;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .tag {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .03);
+      border: 1px solid var(--line);
+      color: #dce8f6;
+      font-size: 13px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .feature-card {
+      padding: 20px 18px 22px;
+      border-radius: 20px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+
+    .feature-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .feature-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .solution-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .solution-actions .btn,
+    .solution-actions .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .solution-visual {
+      display: grid;
+      gap: 18px;
+    }
+
+    .visual-main {
+      position: relative;
+      min-height: 430px;
+      border-radius: 30px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #0d2135, #081320);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+
+    .visual-main img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: .80;
+      mix-blend-mode: screen;
+    }
+
+    .visual-main::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(4, 11, 19, .06), rgba(4, 11, 19, .70));
+    }
+
+    .visual-note {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      z-index: 2;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(7, 17, 27, .58);
+      border: 1px solid rgba(255, 255, 255, .08);
+      color: #e6f1fb;
+      font-size: 12px;
+    }
+
+    .visual-caption {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      bottom: 22px;
+      z-index: 2;
+    }
+
+    .visual-caption strong {
+      display: block;
+      font-size: 24px;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .visual-caption p {
+      margin: 0;
+      color: #cedfeb;
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .visual-subgrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .visual-sub {
+      min-height: 180px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #10253b, #091320);
+      border: 1px solid var(--line);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: end;
+    }
+
+    .visual-sub strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .visual-sub p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .compare-wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      display: grid;
+      gap: 28px;
+    }
+
+    .compare-copy {
+      max-width: 760px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .compare-copy h3 {
+      margin: 0 0 14px;
+      font-size: 40px;
+      line-height: 1.05;
+      letter-spacing: -.04em;
+      font-weight: 700;
+    }
+
+    .compare-copy p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.9;
+      font-size: 16px;
+    }
+
+    .compare-stage {
+      position: relative;
+      min-height: 520px;
+      border-radius: 34px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, #0c2034, #081320);
+      box-shadow: var(--shadow);
+    }
+
+    .compare-side {
+      position: absolute;
+      inset: 0;
+      padding: 30px;
+    }
+
+    .compare-side.before {
+      clip-path: inset(0 calc(100% - var(--split, 56%)) 0 0);
+      background:
+        linear-gradient(180deg, rgba(26, 31, 40, .18), rgba(7, 11, 16, .78)),
+        linear-gradient(90deg, rgba(6, 11, 17, .24), rgba(6, 11, 17, .02)),
+        var(--compare-image) center/cover no-repeat;
+    }
+
+    .compare-side.after {
+      background:
+        radial-gradient(circle at 50% 14%, rgba(255, 220, 178, .18), transparent 26%),
+        radial-gradient(circle at 78% 20%, rgba(103, 188, 255, .16), transparent 22%),
+        linear-gradient(180deg, rgba(7, 17, 27, .04), rgba(7, 17, 27, .58)),
+        var(--compare-image) center/cover no-repeat;
+    }
+
+    .compare-label {
+      display: inline-flex;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(7, 17, 27, .54);
+      border: 1px solid rgba(255, 255, 255, .08);
+      font-size: 12px;
+    }
+
+    .compare-cards {
+      position: absolute;
+      left: 30px;
+      right: 30px;
+      bottom: 30px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .compare-card {
+      min-height: 120px;
+      border-radius: 18px;
+      padding: 16px 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      justify-content: flex-start;
+      background: linear-gradient(180deg, rgba(7, 17, 27, .56), rgba(7, 17, 27, .26));
+      border: 1px solid rgba(255, 255, 255, .08);
+      backdrop-filter: blur(10px);
+    }
+
+    .compare-card strong {
+      display: block;
+      color: #eef5fd;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .compare-card span {
+      display: block;
+      color: #c8d9ea;
+      line-height: 1.75;
+      font-size: 13px;
+    }
+
+    .slider-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: var(--split, 56%);
+      width: 2px;
+      transform: translateX(-1px);
+      background: linear-gradient(180deg, var(--brand-2), var(--brand));
+      box-shadow: 0 0 16px rgba(103, 188, 255, .42);
+    }
+
+    .slider-handle {
+      position: absolute;
+      top: 50%;
+      left: var(--split, 56%);
+      width: 56px;
+      height: 56px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, var(--brand-2), var(--brand));
+      color: #03101b;
+      font-weight: 800;
+      cursor: ew-resize;
+      user-select: none;
+      box-shadow: 0 12px 28px rgba(103, 188, 255, .24);
+    }
+
+    .compare-footer {
+      position: absolute;
+      left: 30px;
+      right: 30px;
+      bottom: 180px;
+      display: flex;
+      justify-content: space-between;
+      color: #dce8f6;
+      font-size: 13px;
+    }
+
+    .timeline {
+      max-width: 980px;
+      margin: 0 auto;
+      display: grid;
+      gap: 22px;
+    }
+
+    .timeline-nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .timeline-btn {
+      padding: 22px 18px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: #dce8f6;
+      cursor: pointer;
+      text-align: left;
+      transition: .25s ease;
+    }
+
+    .timeline-btn.active {
+      background: linear-gradient(180deg, rgba(103, 188, 255, .14), rgba(255, 255, 255, .04));
+      border-color: rgba(103, 188, 255, .28);
+    }
+
+    .timeline-btn small {
+      display: block;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: 11px;
+    }
+
+    .timeline-btn strong {
+      display: block;
+      font-size: 17px;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .timeline-btn span {
+      display: block;
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 13px;
+    }
+
+    .timeline-stage {
+      padding: 42px;
+      border-radius: 30px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      min-height: 320px;
+    }
+
+    .timeline-content {
+      display: none;
+    }
+
+    .timeline-content.active {
+      display: block;
+    }
+
+    .timeline-content h3 {
+      margin: 0 0 16px;
+      font-size: 36px;
+      line-height: 1.08;
+      letter-spacing: -.035em;
+      font-weight: 700;
+    }
+
+    .timeline-content p {
+      margin: 0 0 26px;
+      color: var(--muted);
+      line-height: 1.95;
+      font-size: 16px;
+    }
+
+    .timeline-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .timeline-card {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .03);
+      border: 1px solid var(--line);
+    }
+
+    .timeline-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .timeline-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .faq-contact {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .faq-box,
+    .contact-box {
+      border-radius: 28px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
+    }
+
+    .faq-item:last-child {
+      border-bottom: 0;
+    }
+
+    .faq-q {
+      width: 100%;
+      padding: 22px 24px;
+      background: transparent;
+      color: var(--text);
+      border: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .faq-a {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .25s ease;
+    }
+
+    .faq-a-inner {
+      padding: 0 24px 22px;
+      color: var(--muted);
+      line-height: 1.9;
+      font-size: 14px;
+    }
+
+    .contact-box {
+      padding: 30px;
+    }
+
+    .contact-box h3 {
+      margin: 0 0 14px;
+      font-size: 34px;
+      line-height: 1.08;
+      letter-spacing: -.03em;
+      font-weight: 700;
+    }
+
+    .contact-box p {
+      margin: 0 0 22px;
+      color: var(--muted);
+      line-height: 1.9;
+      font-size: 15px;
+    }
+
+    .contact-points {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin: 0 0 22px;
+    }
+
+    .contact-point {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .03);
+      border: 1px solid var(--line);
+    }
+
+    .contact-point strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .contact-point span {
+      display: block;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 13px;
+    }
+
+    .contact-note {
+      margin: 0 0 22px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: rgba(103, 188, 255, .08);
+      border: 1px solid rgba(103, 188, 255, .18);
+      color: #dce8f6;
+      line-height: 1.85;
+      font-size: 14px;
+    }
+
+    .contact-channels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 0 0 24px;
+    }
+
+    .contact-channel {
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, .03);
+      border: 1px solid var(--line);
+      display: grid;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .contact-channel small {
+      display: block;
+      color: var(--soft);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: 11px;
+      margin-bottom: 10px;
+    }
+
+    .contact-channel strong {
+      display: block;
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .contact-channel p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .contact-qr {
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .08);
+      background: #fff;
+    }
+
+    .contact-qr img {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      display: block;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .full {
+      grid-column: span 2;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .03);
+      color: var(--text);
+      padding: 14px 16px;
+      outline: none;
+    }
+
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, #cfe0f1 50%),
+        linear-gradient(135deg, #cfe0f1 50%, transparent 50%);
+      background-position:
+        calc(100% - 22px) calc(50% - 3px),
+        calc(100% - 16px) calc(50% - 3px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+      padding-right: 38px;
+    }
+
+    select option {
+      color: #06111c;
+      background: #f3f8fc;
+    }
+
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+    }
+
+    .footer-portal {
+      padding-top: 0;
+    }
+
+    .footer-portal-shell {
+      border-radius: 36px;
+      border: 1px solid rgba(255, 255, 255, .08);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .018)),
+        radial-gradient(circle at 10% 10%, rgba(103, 188, 255, .10), transparent 20%);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .footer-portal-top {
+      padding: 48px 42px 30px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: end;
+      border-bottom: 1px solid rgba(255, 255, 255, .06);
+    }
+
+    .footer-portal-top h2 {
+      margin: 0 0 14px;
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1.04;
+      letter-spacing: -.04em;
+      font-weight: 700;
+    }
+
+    .footer-portal-top p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.9;
+      max-width: 760px;
+      font-size: 15px;
+    }
+
+    .footer-links {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+    }
+
+    .footer-col {
+      padding: 34px 32px 40px;
+      border-right: 1px solid rgba(255, 255, 255, .06);
+      min-height: 280px;
+    }
+
+    .footer-col:last-child {
+      border-right: 0;
+    }
+
+    .footer-col small {
+      display: block;
+      color: var(--soft);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: 11px;
+      margin-bottom: 16px;
+    }
+
+    .footer-col h3 {
+      margin: 0 0 14px;
+      font-size: 24px;
+      line-height: 1.08;
+      letter-spacing: -.03em;
+      font-weight: 700;
+    }
+
+    .footer-col p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.85;
+      font-size: 14px;
+    }
+
+    .footer-col a {
+      display: block;
+      padding: 10px 0;
+      color: #dfeaf6;
+      border-top: 1px solid rgba(255, 255, 255, .05);
+      font-size: 14px;
+      transition: .22s ease;
+    }
+
+    .footer-col a:first-of-type {
+      border-top: 0;
+    }
+
+    .footer-col a:hover {
+      color: #ffffff;
+      transform: translateX(4px);
+    }
+
+    footer {
+      padding: 34px 0 46px;
+      color: var(--muted);
+    }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding-top: 18px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      z-index: 1500;
+      transform: translateX(-50%) translateY(10px);
+      padding: 14px 18px;
+      border-radius: 14px;
+      background: rgba(7, 17, 27, .94);
+      border: 1px solid rgba(255, 255, 255, .08);
+      box-shadow: var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transition: .25s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1400;
+      background: rgba(0, 0, 0, .56);
+      backdrop-filter: blur(8px);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: .25s ease;
+    }
+
+    .modal.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-panel {
+      width: min(980px, 100%);
+      border-radius: 30px;
+      background: rgba(7, 17, 27, .98);
+      border: 1px solid rgba(255, 255, 255, .08);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, .08);
+    }
+
+    .modal-body {
+      display: grid;
+      grid-template-columns: 1.08fr .92fr;
+      gap: 24px;
+      padding: 22px;
+    }
+
+    .modal-preview {
+      position: relative;
+      min-height: 360px;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .08);
+      background: linear-gradient(135deg, #0d2135, #081320);
+    }
+
+    .modal-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: .48;
+      mix-blend-mode: screen;
+    }
+
+    .modal-preview::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(4, 11, 19, .08), rgba(4, 11, 19, .82)),
+        radial-gradient(circle at 50% 14%, rgba(103, 188, 255, .18), transparent 26%);
+    }
+
+    .modal-preview-copy {
+      position: absolute;
+      inset: auto 22px 22px 22px;
+      z-index: 2;
+    }
+
+    .modal-preview-copy small {
+      display: block;
+      color: #9ec7ec;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: 11px;
+      margin-bottom: 10px;
+    }
+
+    .modal-preview-copy strong {
+      display: block;
+      font-size: 30px;
+      line-height: 1.08;
+      letter-spacing: -.03em;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .modal-preview-copy p {
+      margin: 0 0 14px;
+      color: #d6e4f2;
+      line-height: 1.85;
+      font-size: 14px;
+    }
+
+    .modal-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .modal-pills span {
+      display: inline-flex;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid rgba(255, 255, 255, .10);
+      color: #e7f1fb;
+      font-size: 12px;
+    }
+
+    .modal-preview-copy ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #e4eef8;
+      line-height: 1.8;
+      font-size: 13px;
+    }
+
+    .modal-info {
+      display: grid;
+      gap: 12px;
+    }
+
+    .modal-info>div {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .03);
+      border: 1px solid rgba(255, 255, 255, .08);
+    }
+
+    .modal-info strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .modal-info p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .modal-info ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+      color: #dce8f6;
+      line-height: 1.8;
+      font-size: 13px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .modal-wechat {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 14px;
+      align-items: start;
+      margin-top: 16px;
+    }
+
+    .modal-wechat .contact-qr {
+      border-radius: 16px;
+    }
+
+    .modal-wechat-copy span {
+      display: block;
+      color: var(--soft);
+      line-height: 1.8;
+      font-size: 13px;
+    }
+
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: .75s ease;
+    }
+
+    [data-reveal].visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1180px) {
+
+      .hero-cards,
+      .stats,
+      .products,
+      .footer-links {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .solution-panel,
+      .faq-contact,
+      .modal-body {
+        grid-template-columns: 1fr;
+      }
+
+      .footer-col:nth-child(2) {
+        border-right: 0;
+      }
+    }
+
+    @media (max-width: 920px) {
+
+      .nav-links,
+      .btn-mini,
+      .nav-actions .btn-ghost {
+        display: none;
+      }
+
+      .menu-toggle {
+        display: inline-flex;
+      }
+
+      .timeline-nav,
+      .timeline-grid,
+      .feature-grid,
+      .contact-points,
+      .contact-channels,
+      .modal-wechat,
+      .visual-subgrid,
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .full {
+        grid-column: auto;
+      }
+
+      .hero-stage {
+        min-height: 1220px;
+      }
+
+      .hero-cards {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .hero-overlay {
+        inset: 22px;
+      }
+
+      .footer-portal-top {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      section {
+        padding: 94px 0;
+      }
+
+      .container {
+        width: min(calc(100% - 24px), var(--container));
+      }
+
+      .hero-copy {
+        margin-bottom: 30px;
+      }
+
+      .hero-sub {
+        font-size: 16px;
+      }
+
+      .hero-stage {
+        min-height: 1560px;
+        border-radius: 26px;
+      }
+
+      .hero-cards,
+      .stats,
+      .products,
+      .footer-links {
+        grid-template-columns: 1fr;
+      }
+
+      .product-pills {
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .compare-stage {
+        min-height: 440px;
+        border-radius: 24px;
+      }
+
+      .compare-cards {
+        grid-template-columns: 1fr;
+        bottom: 22px;
+      }
+
+      .compare-footer {
+        bottom: 140px;
+      }
+
+      .timeline-stage,
+      .contact-box,
+      .faq-box,
+      .footer-portal-shell,
+      .modal-panel {
+        border-radius: 24px;
+      }
+
+      .footer-col {
+        border-right: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, .06);
+        min-height: auto;
+      }
+
+      .footer-col:last-child {
+        border-bottom: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="bgCanvas"></canvas>
+  <div class="noise"></div>
+  <div class="top-progress" id="topProgress"></div>
+
+  <header>
+    <div class="container nav">
+      <a class="brand" href="#top">
+        <div class="brand-mark"><img src="./images/logo.png" alt="Mind3D logo" /></div>
+        <div class="brand-text">
+          <strong>Mind3D</strong>
+          <span>Web3D渲染引擎与地理信息系统解决方案</span>
+        </div>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#products">产品定位</a>
+        <a href="#solutions">解决方案</a>
+        <a href="#showcase">案例展示</a>
+        <a href="#architecture">定制能力</a>
+        <a href="#contact">商务合作</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="btn-ghost" id="openDemo">预约演示</button>
+        <a class="btn" href="#contact">联系我们</a>
+        <button class="menu-toggle" id="menuToggle">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#top">首页</a>
+    <a href="#products">产品定位</a>
+    <a href="#solutions">行业专题</a>
+    <a href="#showcase">特色展示</a>
+    <a href="#architecture">能力链路</a>
+    <a href="#contact">联系咨询</a>
+  </div>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container">
+        <div class="hero-copy" data-reveal>
+          <div class="eyebrow"><i></i> 面向行业场景的 Web3D 高渲染 GIS 引擎</div>
+          <img class="hero-logo" src="./images/logo.png" alt="Mind3D dark logo" />
+          <h1>Mind3D 高渲染引擎</h1>
+          <h4>卓越渲染 · 高品质三维 GIS 解决方案</h4>
+          <p class="hero-sub">
+            Mind3D 是一套面向复杂场景的 Web3D 高渲染 GIS 引擎，
+            以高质量渲染能力为核心，融合时空数据组织、GPU 并行计算与仿真驱动表达，
+            实现真实世界场景的高保真数字映射与动态过程还原。
+          </p>
+          <div class="hero-actions">
+            <a class="btn" href="#products">查看产品定位</a>
+            <a class="btn-ghost" href="#solutions">浏览行业专题</a>
+          </div>
+        </div>
+
+        <div class="hero-stage" data-reveal>
+          <img src="./images/bg.jpg" alt="Mind3D homepage visual">
+          <div class="hero-overlay">
+            <div class="hero-center">
+              <h2>领先行业的四大解决方案</h2>
+              <p>围绕 Web3D 高渲染 GIS 引擎能力，Mind3D 构建了面向行业的四大核心解决方案体系，
+                覆盖水文水利、低空经济、地灾应急以及高质量三维场景展示，
+                实现从数据接入、物理仿真到实时渲染与业务决策的一体化能力闭环。</p>
+
+            </div>
+
+            <div class="hero-cards">
+              <a class="hero-card" href="#solutions">
+                <div class="hero-card-content">
+                  <h3>水利专题</h3>
+                  <ul>
+                    <li>高渲染水面</li>
+                    <li>水文水动力</li>
+                    <li>水利仿真</li>
+                  </ul>
+                  <span class="card-link">了解更多 →</span>
+                </div>
+              </a>
+              <a class="hero-card" href="#solutions">
+                <div class="hero-card-content">
+                  <h3>低空专题</h3>
+                  <ul>
+                    <li>网格引擎</li>
+                    <li>空域管理</li>
+                    <li>智能路径</li>
+                  </ul>
+                  <span class="card-link">了解更多 →</span>
+                </div>
+              </a>
+              <a class="hero-card" href="#solutions">
+                <div class="hero-card-content">
+                  <h3>地灾应急</h3>
+                  <ul>
+                    <li>滑坡泥石流</li>
+                    <li>塌方落石</li>
+                    <li>海啸地震</li>
+                  </ul>
+                  <span class="card-link">了解更多 →</span>
+                </div>
+              </a>
+              <a class="hero-card" href="#solutions">
+                <div class="hero-card-content">
+                  <h3>高质量渲染</h3>
+                  <ul>
+                    <li>三维场景提升</li>
+                    <li>全局光照</li>
+                    <li>GIS环境渲染</li>
+                  </ul>
+                  <span class="card-link">了解更多 →</span>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section data-reveal>
+      <div class="container">
+        <div class="section-head">
+          <h2>核心价值</h2>
+          <p>围绕 Mind3D Engine、Mind3D AI 与 Mind3D Solutions 三层产品能力展开，核心价值不只是画面升级，更是从原生 Cesium 项目迁移、智能增强到行业交付的完整能力闭环。</p>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <strong data-count="3" data-suffix="+">0</strong>
+            <span>核心产品体系：Mind3D Engine、Mind3D AI、Mind3D Solutions 三层一体化协同。</span>
+          </div>
+          <div class="stat">
+            <strong data-count="100" data-suffix="%">0</strong>
+            <span>支持原生 Cesium 项目迁移集成，兼容既有工程能力并可渐进升级到 WebGPU 与 AI 平台能力。</span>
+          </div>
+          <div class="stat">
+            <strong data-count="4" data-suffix="+">0</strong>
+            <span>核心行业方向：水利、低空、地灾应急与高质量渲染展示，支持持续扩展专题体系。</span>
+          </div>
+          <div class="stat">
+            <strong data-count="100" data-suffix="+">0</strong>
+            <span>从渲染到交付的完整表达链路，适合平台首页与项目演示。</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="products" data-reveal>
+      <div class="container">
+        <div class="section-head">
+          <h2>产品定位</h2>
+          <p>围绕 Engine、AI 和 Solutions 三层能力展开，Mind3D 将 WebGPU 实时渲染、行业智能与方案交付组织成更清晰的一体化产品矩阵，让访问者先看懂底座能力，再理解场景落地价值。</p>
+        </div>
+        <div class="products">
+          <article class="product">
+            <small>Platform Core</small>
+            <h3>Mind3D Engine</h3>
+            <p>基于 WebGPU + AI 的下一代 GIS 智能平台产品，提供高性能实时渲染、时空数据组织、智能分析与交互式三维表达能力，支撑城市、水利、低空和数字孪生等复杂场景。</p>
+            <ul>
+              <li>WebGPU 驱动的高性能渲染管线</li>
+              <li>三维 GIS 与时空数据智能组织</li>
+              <li>AI 辅助分析、理解与交互能力</li>
+              <li>面向下一代行业智能平台与数字孪生底座</li>
+            </ul>
+          </article>
+
+          <article class="product">
+            <small>Domain AI</small>
+            <h3>Mind3D AI</h3>
+            <p>基于垂直领域的行业小模型，专精解决需求落地，把行业知识、业务流程和项目经验沉淀为可执行的智能能力，直接服务方案设计、专题搭建与交付实施。</p>
+            <ul>
+              <li>行业知识问答与方案生成</li>
+              <li>专题流程编排与智能助手</li>
+              <li>需求拆解、配置生成与交付加速</li>
+              <li>专精水利、低空、地灾等场景落地</li>
+            </ul>
+          </article>
+
+          <article class="product">
+            <small>Solutions</small>
+            <h3>Mind3D Solutions</h3>
+            <p>围绕水文水利、低空经济、地灾应急和高质量数字孪生展示沉淀成体系方案，连接底层产品能力与真实业务应用，形成可复制、可持续演进的行业表达。</p>
+            <ul>
+              <li>水利专题解决方案</li>
+              <li>低空专题解决方案</li>
+              <li>地灾应急专题解决方案</li>
+              <li>高质量渲染与数字孪生专题方案</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="solutions" data-reveal>
+      <div class="container">
+        <div class="section-head">
+          <h2>行业专题</h2>
+          <p>围绕 Mind3D Engine、Mind3D AI 与 Mind3D Solutions 三层能力，行业专题不只展示效果图，而是按“核心能力、业务场景、正式交付”组织成完整解决方案。每个专题下方都提供对应的解决方案 PDF，方便演示、汇报与商务交流。</p>
+        </div>
+
+        <div class="solution-nav">
+          <button class="solution-btn active" data-solution="water">水利专题</button>
+          <button class="solution-btn" data-solution="lowalt">低空专题</button>
+          <button class="solution-btn" data-solution="disaster">地灾应急专题</button>
+          <button class="solution-btn" data-solution="render">高渲染特色专题</button>
+        </div>
+
+        <div class="solution-panel active" data-panel="water">
+          <div class="solution-copy">
+            <h3>水利专题</h3>
+            <p>面向流域、水库、河湖、泵站、闸坝和水工程场景，水利专题把高渲染水体、水文水动力、工程调度和过程仿真组织成统一三维界面。它既能表达实时运行态势，也能支撑预演、复盘、汇报和行业级平台交付。</p>
+            <div class="tag-row">
+              <span class="tag">高渲染水面</span>
+              <span class="tag">水文水动力</span>
+              <span class="tag">洪水淹没</span>
+              <span class="tag">污染扩散</span>
+              <span class="tag">工程调度</span>
+              <span class="tag">预警复盘</span>
+            </div>
+            <div class="feature-grid">
+              <div class="feature-card"><strong>高渲染水面</strong>
+                <p>支持河道、水库、湖泊、海洋等多类型水体真实感表达，兼顾水体质感、流动性和大场景可视化效果。</p>
+              </div>
+              <div class="feature-card"><strong>水文水动力</strong>
+                <p>将流速、水位、流向、时序栅格和断面分析数据联动到三维场景，实现更直观的水情表达。</p>
+              </div>
+              <div class="feature-card"><strong>洪水与淹没</strong>
+                <p>支持洪水演进、库区泄洪、雨洪汇流和淹没范围过程展示，适合预警研判与复盘分析。</p>
+              </div>
+              <div class="feature-card"><strong>污染与扩散</strong>
+                <p>可将污染源、扩散路径、影响范围和时间过程叠加表达，适用于应急处置和生态治理专题。</p>
+              </div>
+              <div class="feature-card"><strong>工程调度</strong>
+                <p>围绕闸坝、泵站、水库和输水工程构建运行调度场景，连接监测数据、仿真模型与业务流程。</p>
+              </div>
+              <div class="feature-card"><strong>汇报交付</strong>
+                <p>适合调度中心、流域管理、水利工程建设和应急演示等正式项目，形成可汇报、可落地的行业页面。</p>
+              </div>
+            </div>
+            <div class="solution-actions">
+              <a class="btn" href="./images/Mind3D水利仿真功能插件介绍.pdf" download="Mind3D水利仿真功能插件介绍.pdf">下载解决方案详情 PDF</a>
+            </div>
+          </div>
+          <div class="solution-visual">
+            <div class="visual-main">
+              <img src="./images/water1.png" alt="water visual" />
+              <div class="visual-caption">
+                <strong>高渲染水利业务场景</strong>
+                <p>面向大规模水文数据与工程场景构建 GPU 渲染体系，将真实感水体、过程仿真和工程调度统一到同一套三维表达界面中。</p>
+              </div>
+            </div>
+            <div class="visual-subgrid">
+              <div class="visual-sub"><strong>水文分析专题</strong>
+                <p>用于承载流速、水位、色带、时间过程、断面分析和监测图层等专题内容。</p>
+              </div>
+              <div class="visual-sub"><strong>工程调度专题</strong>
+                <p>用于展示泄洪、汇流、泵站联动、闸坝控制和应急演练等工程级过程表达。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="solution-panel" data-panel="lowalt">
+          <div class="solution-copy">
+            <h3>低空专题</h3>
+            <p>面向低空经济与城市低空治理场景，低空专题突出低空网格、空域规则、航线规划、低空气象和任务态势能力，适合建设城市级低空数字底座、监管平台、运营指挥系统和汇报演示页面。</p>
+            <div class="tag-row">
+              <span class="tag">低空网格</span>
+              <span class="tag">空域管理</span>
+              <span class="tag">智能航线</span>
+              <span class="tag">低空气象</span>
+              <span class="tag">任务回放</span>
+              <span class="tag">运营监管</span>
+            </div>
+            <div class="feature-grid">
+              <div class="feature-card"><strong>低空网格底座</strong>
+                <p>将低空空间按业务规则划分为更适合管理、调度和分析的网格单元，形成城市级低空数字底座。</p>
+              </div>
+              <div class="feature-card"><strong>空域治理</strong>
+                <p>支持空域分区、状态表达、规则切换、禁飞区和动态限制区可视化，强化监管与运营协同。</p>
+              </div>
+              <div class="feature-card"><strong>智能航线规划</strong>
+                <p>结合任务目标、起降点、障碍约束和空域规则生成航线，并支持飞行过程动画与推演表达。</p>
+              </div>
+              <div class="feature-card"><strong>低空气象环境</strong>
+                <p>统一展示风场、天气、视程、障碍环境和城市空间信息，为飞行决策与任务组织提供依据。</p>
+              </div>
+              <div class="feature-card"><strong>任务态势回放</strong>
+                <p>支持任务过程、航迹、节点状态和执行结果回放，适合应急响应、物流运营和巡检类场景。</p>
+              </div>
+              <div class="feature-card"><strong>平台集成输出</strong>
+                <p>既可作为低空平台首页，也适合对接监管系统、运营系统和演示页面，形成正式行业交付。</p>
+              </div>
+            </div>
+            <div class="solution-actions">
+              <a class="btn" href="./images/Mind3D三维低空功能插件介绍.pdf" download="Mind3D三维低空功能插件介绍.pdf">下载解决方案详情 PDF</a>
+            </div>
+          </div>
+          <div class="solution-visual">
+            <div class="visual-main">
+              <img src="./images/lowSpace1.png" alt="low altitude visual" />
+              <div class="visual-caption">
+                <strong>低空城市数字底座</strong>
+                <p>适合作为低空平台主视觉与能力入口，后续替换为真实城市级低空项目素材后可直接承接平台首页与专题演示。</p>
+              </div>
+            </div>
+            <div class="visual-subgrid">
+              <div class="visual-sub"><strong>监管指挥场景</strong>
+                <p>适合展示空域管理、监管规则、态势研判和任务调度相关内容，突出平台级指挥能力。</p>
+              </div>
+              <div class="visual-sub"><strong>运营航线场景</strong>
+                <p>适合放置航线规划、飞行路径、配送巡检和过程回放等低空运营场景素材。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="solution-panel" data-panel="disaster">
+          <div class="solution-copy">
+            <h3>地灾应急专题</h3>
+            <p>面向滑坡泥石流、塌方落石、地震海啸、洪水淹没等地灾与应急场景，地灾专题形成适合监测预警、态势研判、推演演练、指挥调度和总结汇报的完整专题体系，重点突出灾害过程、影响范围和多部门联动表达。</p>
+            <div class="tag-row">
+              <span class="tag">滑坡泥石流</span>
+              <span class="tag">地震海啸</span>
+              <span class="tag">洪水淹没</span>
+              <span class="tag">影响范围</span>
+              <span class="tag">应急联动</span>
+              <span class="tag">复盘推演</span>
+            </div>
+            <div class="feature-grid">
+              <div class="feature-card"><strong>灾害过程模拟</strong>
+                <p>适合表达滑坡、泥石流、崩塌、滚石等典型山地地灾过程，也可延展到地震和海啸专题推演。</p>
+              </div>
+              <div class="feature-card"><strong>影响范围评估</strong>
+                <p>支持从灾害发生到波及范围、受影响区域和危险等级分布的全过程表达，便于快速研判。</p>
+              </div>
+              <div class="feature-card"><strong>监测点联动</strong>
+                <p>可叠加监测点、传感器、道路、建筑、人员和重点设施，形成更完整的风险感知与联动分析。</p>
+              </div>
+              <div class="feature-card"><strong>应急资源调度</strong>
+                <p>支持救援资源、避险路线、安置点和应急设施联动表达，适合指挥调度和演练训练场景。</p>
+              </div>
+              <div class="feature-card"><strong>演练与复盘</strong>
+                <p>将灾害过程、响应步骤、处置节点和总结复盘组织成可回放、可讲解、可培训的专题页面。</p>
+              </div>
+              <div class="feature-card"><strong>汇报与交付</strong>
+                <p>适合应急局、自然资源、园区和学校等客户页面，兼顾行业展示、专题系统和正式项目交付。</p>
+              </div>
+            </div>
+            <div class="solution-actions">
+              <a class="btn" href="./images/Mind3D地灾应急功能插件介绍.pdf" download="Mind3D地灾应急功能插件介绍.pdf">下载解决方案详情 PDF</a>
+            </div>
+          </div>
+          <div class="solution-visual">
+            <div class="visual-main">
+              <img src="./images/terrain1.png" alt="disaster visual" />
+              <div class="visual-caption">
+                <strong>地灾应急全景表达</strong>
+                <p>主视觉可替换为滑坡、泥石流、地震或海啸等专题图，快速形成明确主题识别和更强的业务代入感。</p>
+              </div>
+            </div>
+            <div class="visual-subgrid">
+              <div class="visual-sub"><strong>山地地灾专题</strong>
+                <p>适合展示滑坡泥石流、崩塌落石、监测预警和影响范围分析等山地地灾场景。</p>
+              </div>
+              <div class="visual-sub"><strong>区域应急专题</strong>
+                <p>适合承载沿海海啸、区域地震、洪水淹没和多部门联动处置等综合应急主题。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="solution-panel" data-panel="render">
+          <div class="solution-copy">
+            <h3>高渲染特色专题</h3>
+            <p>Mind3D 的高渲染不只是视觉包装，而是面向下一代三维 GIS 与数字孪生展示的环境渲染能力集合。基于 WebGPU 渲染管线，将全局光照、天空、植被、材质、天气和后处理统一到同一套实时表达体系中，适合城市、园区、生态和品牌级展示场景。</p>
+            <div class="tag-row">
+              <span class="tag">高质量全局光照</span>
+              <span class="tag">动态天空系统</span>
+              <span class="tag">动态植被系统</span>
+              <span class="tag">材质与天气</span>
+              <span class="tag">WebGPU 渲染管线</span>
+              <span class="tag">品牌级三维呈现</span>
+            </div>
+            <div class="feature-grid">
+              <div class="feature-card"><strong>高质量全局光照</strong>
+                <p>通过实时全局光照、环境光遮蔽、反射与阴影联动，让建筑、地表、水体和模型获得更稳定的空间层次与光能传递感。</p>
+              </div>
+              <div class="feature-card"><strong>动态天空系统</strong>
+                <p>支持日夜循环、云层变化、体积雾、太阳月亮和天气状态演化，让 GIS 场景具备时间感、气候感和真实环境氛围。</p>
+              </div>
+              <div class="feature-card"><strong>动态植被系统</strong>
+                <p>支持草地、树林和灌木的批量实例化、风场摆动与 LOD 控制，在保证性能的同时显著提升自然环境真实度。</p>
+              </div>
+              <div class="feature-card"><strong>材质与天气联动</strong>
+                <p>材质高光、湿润度、雾效、空气透视与天气状态统一协同，强化场景完成度和电影感表达。</p>
+              </div>
+              <div class="feature-card"><strong>渲染管线</strong>
+                <p>围绕阴影、抗锯齿、后处理、体积效果和材质表达统一调度，构建可扩展的 WebGPU 高质量渲染管线。</p>
+              </div>
+              <div class="feature-card"><strong>品牌展示输出</strong>
+                <p>适合官网首页、园区展示、招商演示、会展场景与数字孪生首屏，兼顾性能、质感与品牌表达。</p>
+              </div>
+            </div>
+            <div class="solution-actions">
+              <a class="btn" href="./images/Mind3D高渲染功能插件介绍.pdf" download="Mind3D高渲染功能插件介绍.pdf">下载解决方案详情 PDF</a>
+            </div>
+          </div>
+          <div class="solution-visual">
+            <div class="visual-main">
+              <img src="./images/effect1.png" alt="render visual" />
+              <div class="visual-caption">
+                <strong>高质量环境渲染场景</strong>
+                <p>通过全局光照、天空散射、植被风动和统一渲染管线，把园区、生态、城市和展示场景提升到更具氛围感与空间层次的视觉级别。</p>
+              </div>
+            </div>
+            <div class="visual-subgrid">
+              <div class="visual-sub"><strong>动态天空与天气</strong>
+                <p>从晴天、黄昏到雾天氛围切换，让场景具备可感知的时间流动和环境叙事能力。</p>
+              </div>
+              <div class="visual-sub"><strong>植被风场与细节</strong>
+                <p>通过草地摆动、树冠层次和材质微细节，让自然环境不再只是背景，而是渲染品质的重要组成部分。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="showcase" data-reveal>
+      <div class="container compare-wrap">
+        <div class="compare-copy">
+          <h3>高质量渲染对比</h3>
+          <p>使用同一城市场景做滑块对比，直接展示基础表达与 Mind3D 高质量渲染效果之间的差异。重点体现在天空氛围、整体光照层次、水面与城市材质统一性，以及整条渲染管线带来的画面完成度提升。</p>
+        </div>
+        <div class="compare-stage" id="compareStage" style="--split:56%;">
+          <div class="compare-side after" style="--compare-image:url('./images/contrast2.png');">
+            <div class="compare-label">Mind3D 高渲染表达</div>
+            <div class="compare-footer"><span>天空氛围、城市层次与水面反射更完整</span><span>更适合品牌展示与数字孪生平台首屏</span></div>
+            <div class="compare-cards">
+              <div class="compare-card"><strong>高质量全局光照</strong><span>建筑体块明暗关系更自然，远近层次和空间纵深更清晰。</span></div>
+              <div class="compare-card"><strong>动态天空系统</strong><span>云层、天光和空气透视共同参与渲染，画面更有时间感与氛围感。</span></div>
+              <div class="compare-card"><strong>统一渲染管线</strong><span>城市、水面、材质和后处理表达统一，整体完成度更高。</span></div>
+            </div>
+          </div>
+          <div class="compare-side before" style="--compare-image:url('./images/contrast1.png');">
+            <div class="compare-label">基础展示</div>
+            <div class="compare-footer"><span>信息能够呈现</span><span>但环境氛围和层次表达偏弱</span></div>
+            <div class="compare-cards">
+              <div class="compare-card"><strong>基础光照</strong><span>明暗关系偏硬，建筑和地表的空间体积感不足。</span></div>
+              <div class="compare-card"><strong>静态天空</strong><span>天空参与感较弱，缺少天气、时间和环境变化带来的氛围塑造。</span></div>
+              <div class="compare-card"><strong>表现单层化</strong><span>城市、水面和远景缺少统一调色与管线协同，视觉表现力有限。</span></div>
+            </div>
+          </div>
+          <div class="slider-line"></div>
+          <div class="slider-handle" id="sliderHandle">↔</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture" data-reveal>
+      <div class="container">
+        <div class="section-head">
+          <h2>能力链路</h2>
+          <p>把 Mind3D 的产品方法论梳理为 4 个连续环节，从 Engine 底座、Cesium 迁移集成到 AI 行业智能与 Solutions 场景交付，形成更清晰的产品认知与落地链路。</p>
+        </div>
+        <div class="timeline">
+          <div class="timeline-nav">
+            <button class="timeline-btn active" data-step="1">
+              <small>Step 01</small>
+              <strong>Mind3D Engine</strong>
+              <span>WebGPU + AI 驱动的下一代 GIS 智能平台底座。</span>
+            </button>
+            <button class="timeline-btn" data-step="2">
+              <small>Step 02</small>
+              <strong>Cesium 迁移集成</strong>
+              <span>100% 支持原生 Cesium 项目平滑迁移与能力接入。</span>
+            </button>
+            <button class="timeline-btn" data-step="3">
+              <small>Step 03</small>
+              <strong>Mind3D AI</strong>
+              <span>基于垂直领域小模型加速需求分析与方案落地。</span>
+            </button>
+            <button class="timeline-btn" data-step="4">
+              <small>Step 04</small>
+              <strong>Mind3D Solutions</strong>
+              <span>沉淀行业专题方案并输出平台、专题与演示交付。</span>
+            </button>
+          </div>
+          <div class="timeline-stage">
+            <div class="timeline-content active" data-content="1">
+              <h3>Mind3D Engine 定义平台能力上限</h3>
+              <p>Mind3D Engine 是基于 WebGPU + AI 的下一代 GIS 智能平台底座，负责承载大规模三维场景、时空数据、高质量环境渲染和实时交互能力，为上层行业方案提供统一技术基线。</p>
+              <div class="timeline-grid">
+                <div class="timeline-card"><strong>WebGPU Engine</strong>
+                  <p>统一驱动高性能渲染管线、全局光照、天空系统、植被系统与后处理表达。</p>
+                </div>
+                <div class="timeline-card"><strong>GIS Data Core</strong>
+                  <p>支持地形、影像、模型、时空图层和多源业务数据的统一组织与调度。</p>
+                </div>
+                <div class="timeline-card"><strong>Interactive Intelligence</strong>
+                  <p>提供智能分析、空间理解和交互式三维表达能力，支撑平台级业务联动。</p>
+                </div>
+              </div>
+            </div>
+            <div class="timeline-content" data-content="2">
+              <h3>100% 支持原生 Cesium 项目迁移集成</h3>
+              <p>Mind3D 不要求用户放弃既有 Cesium 工程，而是支持在原生 Cesium 项目基础上平滑迁移与渐进集成，让现有数据组织、业务逻辑和场景资产可以持续复用并完成能力升级。</p>
+              <div class="timeline-grid">
+                <div class="timeline-card"><strong>原生兼容</strong>
+                  <p>保持 Cesium 场景结构、数据接入方式和既有工程体系的延续性，降低替换成本。</p>
+                </div>
+                <div class="timeline-card"><strong>渐进升级</strong>
+                  <p>可以按模块逐步接入高质量渲染、环境系统、AI 能力与专题组件，不必一次性重构。</p>
+                </div>
+                <div class="timeline-card"><strong>工程集成</strong>
+                  <p>适合已有平台继续扩展首页、专题页、汇报页和业务子系统，兼顾兼容性与演进空间。</p>
+                </div>
+              </div>
+            </div>
+            <div class="timeline-content" data-content="3">
+              <h3>Mind3D AI 让需求更快落地</h3>
+              <p>Mind3D AI 基于垂直领域行业小模型，将行业知识、业务流程和交付经验沉淀成可执行的智能能力，帮助团队更快完成需求理解、专题配置、内容生成和实施落地。</p>
+              <div class="timeline-grid">
+                <div class="timeline-card"><strong>需求理解</strong>
+                  <p>围绕行业语言、业务流程和场景目标辅助梳理需求，减少沟通与试错成本。</p>
+                </div>
+                <div class="timeline-card"><strong>智能编排</strong>
+                  <p>支持专题流程、配置参数、页面内容和方案结构的智能生成与编排。</p>
+                </div>
+                <div class="timeline-card"><strong>交付加速</strong>
+                  <p>把行业经验转化为可复用智能助手，提升方案设计、实施与汇报阶段的整体效率。</p>
+                </div>
+              </div>
+            </div>
+            <div class="timeline-content" data-content="4">
+              <h3>Mind3D Solutions 输出行业级方案与正式交付</h3>
+              <p>在 Engine 和 AI 的基础上，Mind3D Solutions 将技术能力沉淀为面向行业的完整专题方案，最终输出为平台首页、专题系统、客户演示页和正式项目交付成果。</p>
+              <div class="timeline-grid">
+                <div class="timeline-card"><strong>行业专题</strong>
+                  <p>覆盖水利、低空、地灾应急与高质量渲染展示等核心方向，形成可复制方案资产。</p>
+                </div>
+                <div class="timeline-card"><strong>平台输出</strong>
+                  <p>支持官网首页、产品页、平台首页、专题页和汇报系统等多种交付形态。</p>
+                </div>
+                <div class="timeline-card"><strong>持续演进</strong>
+                  <p>从单项目演示到长期平台建设均可复用，形成 100+ 的渲染到交付完整表达链路。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact" data-reveal>
+      <div class="container">
+        <div class="section-head">
+          <h2>联系咨询</h2>
+          <p>围绕行业方案、Cesium 迁移、国产信创适配与项目交付，Mind3D 可以提供更贴近真实项目的咨询支持。你可以把现有平台情况、行业方向和目标部署环境一起带过来，我们会更快对齐方案。</p>
+        </div>
+
+        <div class="faq-contact">
+          <div class="faq-box">
+            <div class="faq-item">
+              <button class="faq-q"><span>Mind3D 的核心定位是什么？</span><span>+</span></button>
+              <div class="faq-a">
+                <div class="faq-a-inner">Mind3D 依托 Web3D 高渲染能力，深入水利、低空、地灾等重点行业，提供行业级领先解决方案。它既有下一代 GIS 智能平台底座能力，也能输出正式专题系统、平台首页和项目交付成果。</div>
+              </div>
+            </div>
+            <div class="faq-item">
+              <button class="faq-q"><span>Mind3D 是否兼容 Cesium？</span><span>+</span></button>
+              <div class="faq-a">
+                <div class="faq-a-inner">兼容。Mind3D 100% 兼容任意 Cesium 项目，支持原生 Cesium 工程平滑迁移与渐进集成。同时它又不限于 Cesium，融合了游戏引擎在渲染与交互方面的优点，以及 GIS 在时空数据与专业场景上的能力。</div>
+              </div>
+            </div>
+            <div class="faq-item">
+              <button class="faq-q"><span>Mind3D 在国产环境下运行情况如何？</span><span>+</span></button>
+              <div class="faq-a">
+                <div class="faq-a-inner">Mind3D 支持国产信创环境渲染，可针对不同硬件条件提供差异化适配策略，在渲染效果、性能与兼容性之间做平衡。它已经支撑很多客户的平台认证、信创适配与国产化落地需求。</div>
+              </div>
+            </div>
+            <div class="faq-item">
+              <button class="faq-q"><span>Mind3D 的运行基础配置建议是什么？</span><span>+</span></button>
+              <div class="faq-a">
+                <div class="faq-a-inner">常规建议配置为 6G 显存、32G 运行内存，并支持 WebGL2。国产环境建议使用景嘉微 JH1100、摩尔线程 MTT S50 等具备 3D 图形能力的显卡，以保障正式项目中的渲染与平台运行稳定性。</div>
+              </div>
+            </div>
+            <div class="faq-item">
+              <button class="faq-q"><span>咨询时建议提前准备哪些信息？</span><span>+</span></button>
+              <div class="faq-a">
+                <div class="faq-a-inner">建议准备所属行业、现有平台栈、是否已有 Cesium 项目、目标部署环境、国产 GPU 型号、希望落地的专题方向，以及当前最关注的演示、汇报或正式交付目标，这样更容易快速进入方案评估。</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="contact-box">
+            <h3>发起方案咨询与项目评估</h3>
+            <p>无论你是要做水利、低空、地灾专题，还是要在现有 Cesium 平台上升级 WebGPU 高渲染能力、完成国产信创适配，Mind3D 都可以围绕平台架构、专题方案和正式交付给出更完整的落地建议。当前页面支持默认邮件咨询，也支持微信扫码沟通。</p>
+
+            <div class="contact-points">
+              <div class="contact-point"><strong>行业方案</strong>
+                <span>聚焦水利、低空、地灾应急与高质量渲染展示，支持从专题原型到正式交付。</span>
+              </div>
+              <div class="contact-point"><strong>Cesium 迁移</strong>
+                <span>100% 兼容原生 Cesium 项目，支持渐进升级，不必一次性推翻既有工程。</span>
+              </div>
+              <div class="contact-point"><strong>国产信创适配</strong>
+                <span>支持国产环境渲染与多硬件策略适配，支撑平台认证、信创和国产化建设。</span>
+              </div>
+              <div class="contact-point"><strong>基础配置建议</strong>
+                <span>推荐 6G 显存、32G 内存、支持 WebGL2；国产环境可选 JH1100、MTT S50 等图形显卡。</span>
+              </div>
+            </div>
+
+            <div class="contact-note">如果你当前已有 Cesium 平台、需要兼容国产 GPU 或准备做行业专题汇报，可以把现状和目标一起发来，我们会更容易判断迁移路径、渲染策略和交付方式。</div>
+
+            <div class="contact-channels">
+              <div class="contact-channel">
+                <div>
+                  <small>Email</small>
+                  <strong>邮件咨询</strong>
+                  <p>提交下方表单后会默认调用本地邮件客户端，收件邮箱为 mind3d@163.com。如果你已经准备好需求，也可以直接点击按钮发起邮件。</p>
+                </div>
+                <a class="btn-ghost" href="mailto:mind3d@163.com?subject=Mind3D%20%E5%92%A8%E8%AF%A2">发送邮件至 mind3d@163.com</a>
+              </div>
+              <div class="contact-channel">
+                <div>
+                  <small>WeChat</small>
+                  <strong>微信咨询</strong>
+                  <p>扫描下方二维码即可添加微信，适合沟通方案细节、项目迁移路径、国产环境适配与行业专题交付需求。</p>
+                </div>
+                <div class="contact-qr">
+                  <img src="./images/wx.jpg" alt="Mind3D WeChat QR" />
+                </div>
+              </div>
+            </div>
+
+            <form id="contactForm">
+              <div class="form-grid">
+                <input type="text" name="name" placeholder="姓名 / 单位" required />
+                <input type="text" name="contact" placeholder="联系电话 / 微信" required />
+                <select name="topic">
+                  <option>咨询方向</option>
+                  <option>Mind3D Engine 平台能力</option>
+                  <option>Cesium 迁移集成</option>
+                  <option>Mind3D AI 行业小模型</option>
+                  <option>水利专题解决方案</option>
+                  <option>低空专题解决方案</option>
+                  <option>地灾应急专题解决方案</option>
+                  <option>高质量渲染专题方案</option>
+                  <option>国产信创环境适配</option>
+                  <option>官网 / 平台首页定制</option>
+                </select>
+                <input type="email" name="email" placeholder="邮箱（选填）" />
+                <textarea class="full" name="message" placeholder="请说明所属行业、是否已有 Cesium 项目、目标部署环境（含是否国产信创 / GPU 型号）、希望落地的专题方向或平台需求"></textarea>
+                <button class="btn full" type="submit">提交并发送邮件</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="footer-portal" data-reveal>
+      <div class="container">
+        <div class="footer-portal-shell">
+          <div class="footer-portal-top">
+            <div>
+              <h2>围绕平台能力、行业方案与内容矩阵，进一步了解 Mind3D</h2>
+            </div>
+            <a class="btn" href="#top">返回顶部</a>
+          </div>
+
+          <div class="footer-links">
+            <div class="footer-col">
+              <small>Products</small>
+              <h3>产品入口</h3>
+              <a href="#products">Mind3D Engine</a>
+              <a href="#products">Mind3D AI</a>
+              <a href="#products">Mind3D Solutions</a>
+            </div>
+
+            <div class="footer-col">
+              <small>Solutions</small>
+              <h3>专题入口</h3>
+              <a href="#solutions">水利专题</a>
+              <a href="#solutions">低空专题</a>
+              <a href="#solutions">地灾应急专题</a>
+              <a href="#solutions">高渲染特色专题</a>
+            </div>
+
+            <div class="footer-col">
+              <small>Resources</small>
+              <h3>资源入口</h3>
+              <a href="#showcase">案例展示</a>
+              <a href="#architecture">能力链路</a>
+              <a href="https://space.bilibili.com/432028432" target="_blank" rel="noreferrer noopener">Bilibili</a>
+              <a href="https://www.zhihu.com/people/a8d3c219bda5ec87a90c15af08eb4e3f" target="_blank" rel="noreferrer noopener">知乎</a>
+              <a href="https://mp.weixin.qq.com/s/2WT8v4CnNSRyUalrHij7NA" target="_blank" rel="noreferrer noopener">公众号</a>
+            </div>
+
+            <div class="footer-col">
+              <small>About</small>
+              <h3>关于与联系</h3>
+              <a href="#contact">联系我们</a>
+              <a href="#contact">商务合作</a>
+              <a href="#contact">项目定制</a>
+              <a href="#contact">官方入口</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-bottom">
+      <div class="brand">
+        <div class="brand-mark"><img src="./images/logo.png" alt="Mind3D footer logo" /></div>
+        <div class="brand-text">
+          <strong>Mind3D</strong>
+          <span>Web3D 高渲染 GIS 引擎与行业专题方案</span>
+        </div>
+      </div>
+      <div>© 2022-2026 Mind3D. 保留所有权利。</div>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast">已完成前端演示提交，正式部署时可接入真实接口。</div>
+
+  <div class="modal" id="demoModal">
+    <div class="modal-panel">
+      <div class="modal-head">
+        <strong>预约 Mind3D 方案演示</strong>
+        <button class="btn-ghost" id="closeDemo">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-preview"><img
+            src="./images/bg.jpg" alt="Mind3D demo preview" />
+          <div class="modal-preview-copy">
+            <small>Demo Booking</small>
+            <strong>聚焦平台能力与行业落地的正式演示</strong>
+            <div class="modal-pills">
+              <span>WebGPU + AI</span>
+              <span>Cesium 迁移</span>
+              <span>行业专题</span>
+            </div>
+            <p>预约演示将围绕 Mind3D Engine、Mind3D AI 与 Mind3D Solutions 展开，并结合你的行业方向、现有项目基础与目标部署环境，给出更贴近真实落地场景的演示内容。</p>
+            <ul>
+              <li>WebGPU + AI 驱动的下一代 GIS 智能平台能力</li>
+              <li>原生 Cesium 项目迁移集成与渐进升级方式</li>
+              <li>水利、低空、地灾与高质量渲染专题展示</li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-info">
+          <div><strong>本次演示可重点覆盖</strong>
+            <p>你可以按项目实际情况选择更聚焦的演示范围，我们会优先围绕平台升级、专题建设与交付路径来组织内容。</p>
+            <ul>
+              <li>平台底座能力与高质量渲染体系</li>
+              <li>Cesium 项目迁移集成与国产环境适配</li>
+              <li>水利、低空、地灾等行业专题演示</li>
+            </ul>
+          </div>
+          <div><strong>适合预约演示的项目</strong>
+            <p>适合已有 Cesium 平台准备升级高渲染能力的项目，也适合从零建设行业平台首页、专题系统、汇报演示页和国产信创适配场景。</p>
+          </div>
+          <div><strong>预约方式</strong>
+            <p>你可以直接邮件预约，也可以转到联系咨询区补充需求。对于项目细节沟通、国产环境适配和迁移路径讨论，建议同时保留微信沟通方式。</p>
+            <div class="modal-actions">
+              <a class="btn" href="mailto:mind3d@163.com?subject=Mind3D%20%E9%A2%84%E7%BA%A6%E6%BC%94%E7%A4%BA">邮件预约演示</a>
+              <a class="btn-ghost" href="#contact" data-close-modal="true">转到联系咨询</a>
+            </div>
+            <div class="modal-wechat">
+              <div class="contact-qr">
+                <img src="./images/wx.jpg" alt="Mind3D demo wechat qr" />
+              </div>
+              <div class="modal-wechat-copy">
+                <strong>微信补充沟通</strong>
+                <span>扫码可直接添加微信，适合发送项目背景、平台截图、硬件环境信息以及更细化的演示诉求。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const topProgress = document.getElementById('topProgress');
+    const toast = document.getElementById('toast');
+    const menuToggle = document.getElementById('menuToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const openDemo = document.getElementById('openDemo');
+    const closeDemo = document.getElementById('closeDemo');
+    const demoModal = document.getElementById('demoModal');
+    const langToggle = document.getElementById('langToggle');
+
+    function showToast(text) {
+      toast.textContent = text;
+      toast.classList.add('show');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    window.addEventListener('scroll', () => {
+      const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      topProgress.style.width = (height > 0 ? scrollTop / height * 100 : 0) + '%';
+    });
+
+    menuToggle?.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+    mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mobileMenu.classList.remove('open')));
+
+    openDemo?.addEventListener('click', () => demoModal.classList.add('open'));
+    closeDemo?.addEventListener('click', () => demoModal.classList.remove('open'));
+    demoModal?.addEventListener('click', (e) => {
+      if (e.target === demoModal) demoModal.classList.remove('open');
+    });
+    demoModal?.querySelectorAll('[data-close-modal="true"]').forEach(link => {
+      link.addEventListener('click', () => demoModal.classList.remove('open'));
+    });
+    langToggle?.addEventListener('click', () => showToast('当前为中文主版本，后续可扩展完整双语。'));
+
+    document.querySelectorAll('[data-reveal]').forEach(el => {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: .15 });
+      io.observe(el);
+    });
+
+    document.querySelectorAll('[data-count]').forEach(el => {
+      const target = Number(el.dataset.count || 0);
+      const suffix = el.dataset.suffix || '+';
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          const start = performance.now();
+          const duration = 1200;
+          function tick(now) {
+            const p = Math.min(1, (now - start) / duration);
+            const value = Math.round(target * (1 - Math.pow(1 - p, 3)));
+            el.textContent = value + suffix;
+            if (p < 1) requestAnimationFrame(tick);
+          }
+          requestAnimationFrame(tick);
+          io.unobserve(entry.target);
+        });
+      }, { threshold: .3 });
+      io.observe(el);
+    });
+
+    const solutionButtons = document.querySelectorAll('.solution-btn');
+    const solutionPanels = document.querySelectorAll('.solution-panel');
+    solutionButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.solution;
+        solutionButtons.forEach(b => b.classList.toggle('active', b === btn));
+        solutionPanels.forEach(p => p.classList.toggle('active', p.dataset.panel === key));
+      });
+    });
+
+    const timelineButtons = document.querySelectorAll('.timeline-btn');
+    const timelineContents = document.querySelectorAll('.timeline-content');
+    timelineButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.step;
+        timelineButtons.forEach(b => b.classList.toggle('active', b === btn));
+        timelineContents.forEach(c => c.classList.toggle('active', c.dataset.content === key));
+      });
+    });
+
+    document.querySelectorAll('.faq-item').forEach(item => {
+      const q = item.querySelector('.faq-q');
+      const a = item.querySelector('.faq-a');
+      const icon = q.querySelector('span:last-child');
+      q.addEventListener('click', () => {
+        const open = a.style.maxHeight && a.style.maxHeight !== '0px';
+        document.querySelectorAll('.faq-a').forEach(x => x.style.maxHeight = null);
+        document.querySelectorAll('.faq-q span:last-child').forEach(i => i.textContent = '+');
+        if (!open) {
+          a.style.maxHeight = a.scrollHeight + 'px';
+          icon.textContent = '–';
+        }
+      });
+    });
+
+    document.getElementById('contactForm')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const formData = new FormData(form);
+      const name = (formData.get('name') || '').toString().trim();
+      const contact = (formData.get('contact') || '').toString().trim();
+      const defaultTopic = '咨询方向';
+      const topic = (formData.get('topic') || '').toString().trim() || defaultTopic;
+      const email = (formData.get('email') || '').toString().trim();
+      const message = (formData.get('message') || '').toString().trim();
+      const subject = 'Mind3D 咨询 - ' + (topic === defaultTopic ? '商务咨询' : topic);
+      const bodyLines = [
+        'Mind3D 官网咨询表单',
+        '',
+        '姓名 / 单位：' + (name || '未填写'),
+        '联系电话 / 微信：' + (contact || '未填写'),
+        '咨询方向：' + (topic || '未填写'),
+        '邮箱：' + (email || '未填写'),
+        '',
+        '项目需求：',
+        message || '未填写',
+      ];
+      const mailto = 'mailto:mind3d@163.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(bodyLines.join('\n'));
+      window.location.href = mailto;
+      showToast('已调起默认邮件客户端，收件邮箱为 mind3d@163.com。');
+      form.reset();
+    });
+
+    const compareStage = document.getElementById('compareStage');
+    const sliderHandle = document.getElementById('sliderHandle');
+    let dragging = false;
+    function setSplit(clientX) {
+      const rect = compareStage.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      compareStage.style.setProperty('--split', (ratio * 100).toFixed(1) + '%');
+    }
+    sliderHandle.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      sliderHandle.setPointerCapture(e.pointerId);
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (dragging) setSplit(e.clientX);
+    });
+    window.addEventListener('pointerup', () => dragging = false);
+    compareStage.addEventListener('click', (e) => setSplit(e.clientX));
+
+    const canvas = document.getElementById('bgCanvas');
+    const ctx = canvas.getContext('2d');
+    let w = 0, h = 0, dpr = Math.min(2, window.devicePixelRatio || 1);
+    let points = [];
+
+    function resizeCanvas() {
+      w = canvas.width = Math.floor(innerWidth * dpr);
+      h = canvas.height = Math.floor(innerHeight * dpr);
+      canvas.style.width = innerWidth + 'px';
+      canvas.style.height = innerHeight + 'px';
+      points = Array.from({ length: Math.max(24, Math.floor(innerWidth / 64)) }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - .5) * .18,
+        vy: (Math.random() - .5) * .12,
+        r: Math.random() * 2 + .6
+      }));
+    }
+
+    function animateBg() {
+      ctx.clearRect(0, 0, w, h);
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        p.x += p.vx * dpr;
+        p.y += p.vy * dpr;
+        if (p.x < -20) p.x = w + 20;
+        if (p.x > w + 20) p.x = -20;
+        if (p.y < -20) p.y = h + 20;
+        if (p.y > h + 20) p.y = -20;
+
+        for (let j = i + 1; j < points.length; j++) {
+          const q = points[j];
+          const dx = p.x - q.x, dy = p.y - q.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 150 * dpr) {
+            ctx.strokeStyle = `rgba(103,188,255,${(1 - dist / (150 * dpr)) * 0.08})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(q.x, q.y);
+            ctx.stroke();
+          }
+        }
+
+        ctx.fillStyle = 'rgba(170,220,255,.28)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * dpr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      requestAnimationFrame(animateBg);
+    }
+
+    resizeCanvas();
+    animateBg();
+    window.addEventListener('resize', resizeCanvas);
+  </script>
+</body>
+
+</html>
